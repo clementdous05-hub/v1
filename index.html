@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V1 — Art du Clip</title>
+<style>
+:root{
+  --ink:#0C0F12; --ink2:#151A1F; --line:rgba(255,255,255,.12);
+  --grey:#8C979F; --accent:#E8452A;
+  --pad:clamp(18px,3.2vw,48px);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink)}
+body{color:#EDEFF1;font-family:"Inter Tight",Helvetica,Arial,sans-serif;overflow:hidden}
+body.done{overflow:auto}
+a{color:inherit;text-decoration:none}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+
+/* ---------- fond ---------- */
+#decor{position:fixed;inset:0;z-index:10;pointer-events:none;transition:opacity .5s linear;
+  background:
+    radial-gradient(110% 80% at 50% 6%, #232B33 0%, #12171C 42%, #080A0C 100%);
+}
+#decor::before{content:"";position:absolute;inset:0;
+  background-image:radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1.2px);
+  background-size:28px 28px;
+  -webkit-mask-image:radial-gradient(72% 60% at 50% 42%,#000 15%,transparent 100%);
+          mask-image:radial-gradient(72% 60% at 50% 42%,#000 15%,transparent 100%);
+  opacity:.5}
+#decor::after{content:"";position:absolute;inset:0;opacity:.10;mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body.done #decor{opacity:0}
+#cadre{position:fixed;inset:22px;z-index:20;pointer-events:none;border:1px solid var(--line);transition:opacity .4s linear}
+#cadre .coin{position:absolute;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:rgba(255,255,255,.34)}
+#cadre .tl{top:-1px;left:-1px;padding:8px 10px;background:var(--ink)}
+#cadre .bl{bottom:-1px;left:-1px;padding:8px 10px;background:var(--ink)}
+
+/* ---------- les affiches ---------- */
+#scene{position:fixed;inset:0;z-index:50;pointer-events:none}
+.stamp{
+  position:absolute;left:50%;top:50%;
+  width:var(--w);aspect-ratio:572/207;background:var(--c);
+  -webkit-mask:url("assets/logo_vector.svg") center/contain no-repeat;
+          mask:url("assets/logo_vector.svg") center/contain no-repeat;
+  transform:translate(-50%,-50%) translate(var(--x),var(--y)) rotate(var(--r)) scale(.86);
+  opacity:0;will-change:transform,opacity;
+  transition:transform .62s var(--ease),opacity .3s linear;
+}
+.stamp.in{opacity:var(--o);transform:translate(-50%,-50%) translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}
+.stamp.gather{opacity:0;transform:translate(-50%,-50%) translate(0,0) rotate(0deg) scale(.9);
+  transition:transform .52s cubic-bezier(.7,0,.2,1),opacity .38s ease-in .06s}
+
+/* ---------- le wordmark qui prend toutes les couleurs ---------- */
+#final{position:fixed;left:50%;top:50%;width:24vw;aspect-ratio:572/207;z-index:45;
+  transform:translate(-50%,-50%) scale(.92);opacity:0;pointer-events:none;
+  background:#F27640;transition:opacity .22s linear,transform .34s var(--ease);
+  -webkit-mask:url("assets/logo_vector.svg") center/contain no-repeat;
+          mask:url("assets/logo_vector.svg") center/contain no-repeat}
+#final.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+/* ---------- la fenetre ---------- */
+#window{position:fixed;inset:0;z-index:40;opacity:0;pointer-events:none;
+  transition:opacity .22s linear;
+  -webkit-mask-image:url("assets/logo_vector.svg");mask-image:url("assets/logo_vector.svg");
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:24% auto;mask-size:24% auto}
+#window video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:filter .45s linear}
+#window.open video{filter:blur(6px)}
+#window.plain video{filter:blur(0)}
+#window .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 45%,rgba(0,0,0,.34))}
+#window.open{-webkit-mask-size:660% auto;mask-size:660% auto;
+  transition:opacity .22s linear,-webkit-mask-size .45s cubic-bezier(.6,0,.9,.3),mask-size .45s cubic-bezier(.6,0,.9,.3)}
+#window.plain{-webkit-mask-image:none;mask-image:none}
+
+/* ---------- nav ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;justify-content:space-between;align-items:center;
+    padding:16px var(--pad);color:#fff;opacity:0;transform:translateY(-6px);
+    transition:opacity .5s var(--ease),transform .5s var(--ease)}
+nav.on{opacity:1;transform:none}
+nav img{height:clamp(20px,2.2vw,26px);width:auto;display:block}
+nav .links{display:flex;gap:22px}
+nav .links a{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+
+#skip{position:fixed;right:var(--pad);bottom:calc(var(--pad) - 8px);z-index:70;color:rgba(255,255,255,.55);
+      font:400 10px/1 inherit;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;
+      border:0;border-bottom:1px solid currentColor;padding:0 0 2px;background:none}
+#skip:hover{color:#fff}
+
+/* ---------- la page ---------- */
+#hero{height:100svh;position:relative;z-index:1;color:#fff;opacity:0;transition:opacity .5s linear}
+body.done #hero{opacity:1}
+body.done #window{z-index:0}   /* la meme video passe derriere le contenu, sans coupure */
+#hero .foot{position:absolute;left:var(--pad);right:var(--pad);bottom:26px;display:flex;justify-content:space-between;gap:24px;color:rgba(255,255,255,.82)}
+#hero .foot div{line-height:1.9}
+</style>
+</head>
+<body>
+
+<div id="decor" aria-hidden="true"></div>
+
+<div id="window" aria-hidden="true">
+  <video id="reel" src="assets/videos/reel.mp4" poster="assets/reel_poster.jpg" muted loop playsinline preload="auto"></video>
+  <div class="veil"></div>
+</div>
+
+<div id="scene" aria-hidden="true"><div id="stamps"></div></div>
+
+<nav id="nav">
+  <a href="#"><img src="assets/logo_blanc.png" alt="Art du Clip"></a>
+  <div class="links"><a href="#">Films</a><a href="#">Contact</a></div>
+  <div class="mono" style="opacity:.7">Paris, FR</div>
+</nav>
+
+<section id="hero"></section>
+
+<script>
+/* palette des clips, plus un blanc cassé pour tenir sur le fond sombre */
+const PALETTE = ['#F27640','#42C7F0','#F2D24B','#B98CF0','#7BD389','#E8452A','#D8B279','#F45D9C',
+                '#3B85CE','#5FD0C0','#FF8A3D','#C8FF3D','#FF6F91','#6C63FF','#F0C9A6','#9BE8D8',
+                '#C86B4A','#E0A3C3','#A0D2E8','#EDEFF1','#D946EF','#63E6BE','#0F8B8D','#7A1F3D',
+                '#1F3A93','#8A5A3B','#9DA339','#F7F3E8'];
+const PLAN = [
+  {x:'-26vw', y:'-18vh', w:'24vw', r:'-14deg', o:.95},
+  {x:'  8vw', y:'-24vh', w:'30vw', r:'  6deg', o:.90},
+  {x:' 27vw', y:' -9vh', w:'19vw', r:' 11deg', o:.80},
+  {x:'-31vw', y:'  8vh', w:'22vw', r:'  8deg', o:.85},
+  {x:' -5vw', y:'  1vh', w:'26vw', r:' -3deg', o:.98},
+  {x:' 22vw', y:' 16vh', w:'25vw', r:'-10deg', o:.88},
+  {x:'-10vw', y:' 25vh', w:'20vw', r:' 15deg', o:.82},
+  {x:'-40vw', y:'-30vh', w:'15vw', r:' -6deg', o:.62},
+  {x:' 40vw', y:' 28vh', w:'16vw', r:'  9deg', o:.60},
+  {x:' 15vw', y:'-34vh', w:'13vw', r:' -9deg', o:.55},
+  {x:'-17vw', y:' 36vh', w:'14vw', r:'  4deg', o:.58},
+  {x:' 35vw', y:' -3vh', w:'12vw', r:'-18deg', o:.50},
+  {x:' -2vw', y:'-13vh', w:'18vw', r:' 12deg', o:.72},
+  {x:' 18vw', y:'-16vh', w:'14vw', r:' -7deg', o:.66},
+  {x:'-22vw', y:' -6vh', w:'16vw', r:'  3deg', o:.70},
+  {x:'  3vw', y:' 12vh', w:'15vw', r:'-11deg', o:.75},
+  {x:' 30vw', y:' 33vh', w:'11vw', r:'  6deg', o:.52},
+  {x:'-34vw', y:' 20vh', w:'13vw', r:'-13deg', o:.56},
+  {x:' 44vw', y:' 12vh', w:'10vw', r:' 14deg', o:.46},
+  {x:'-13vw', y:'-31vh', w:'11vw', r:'  8deg', o:.48},
+  {x:'-42vw', y:'  0vh', w:'12vw', r:' -5deg', o:.44},
+  {x:' 12vw', y:' 38vh', w:'12vw', r:' 10deg', o:.50},
+  {x:' 24vw', y:'-28vh', w:'10vw', r:'-12deg', o:.52},
+  {x:' -8vw', y:'-39vh', w:'10vw', r:'  5deg', o:.45},
+  {x:' 46vw', y:'-14vh', w:' 9vw', r:'  8deg', o:.42},
+  {x:'-38vw', y:' 32vh', w:'11vw', r:'-16deg', o:.47},
+  {x:'  6vw', y:' 41vh', w:' 9vw', r:' -4deg', o:.40},
+  {x:'-20vw', y:' 39vh', w:'10vw', r:' 14deg', o:.43}
+];
+
+const stamps=document.getElementById('stamps');
+const made=PLAN.map((p,i)=>{
+  const d=document.createElement('div');
+  d.className='stamp';
+  d.style.setProperty('--x',p.x); d.style.setProperty('--y',p.y);
+  d.style.setProperty('--w',p.w); d.style.setProperty('--r',p.r);
+  d.style.setProperty('--o',p.o);
+  d.style.setProperty('--c',PALETTE[i%PALETTE.length]);
+  stamps.appendChild(d); return d;
+});
+
+const win=document.getElementById('window'), reel=document.getElementById('reel');
+const finalMark=document.createElement('div'); finalMark.id='final'; document.body.appendChild(finalMark);
+const nav=document.getElementById('nav'), skip=document.getElementById('skip'), scene=document.getElementById('scene');
+
+const DEPART = 5.5;   /* depart calé pour que l'ouverture du logo tombe sur un plan lumineux (9 s du reel) */
+
+function demarrer(){
+  if(reel.readyState >= 1) reel.currentTime = DEPART;
+  else reel.addEventListener('loadedmetadata', ()=>{ reel.currentTime = DEPART; }, {once:true});
+  reel.play().catch(()=>{});
+  made.forEach((d,i)=> setTimeout(()=> d.classList.add('in'), 20 + i*18));      // 0 -> 0,5 s
+  if(location.search.indexOf('freeze')>-1) return;   /* outil de capture */
+  setTimeout(()=> made.forEach(d=> d.classList.add('gather')), 1000);            // 1,0 -> 1,5 s
+
+  /* le wordmark unique, qui prouve qu'il prend n'importe quelle couleur */
+  setTimeout(()=>{ finalMark.classList.add('on'); }, 1020);
+  const CYCLE = ['#F27640','#42C7F0','#7BD389','#F45D9C','#B98CF0','#F2D24B'];
+  CYCLE.forEach((c,i)=> setTimeout(()=>{ finalMark.style.background=c; }, 1200 + i*90));
+
+  setTimeout(()=>{ win.style.opacity=1; reel.play().catch(()=>{}); }, 1700);     // la fenetre video prend le relais
+  setTimeout(()=>{ finalMark.style.opacity=0; }, 1740);
+  setTimeout(()=> win.classList.add('open'), 2050);                              // lecture du wordmark, puis ouverture
+  setTimeout(()=>{ scene.style.transition='opacity .45s linear'; scene.style.opacity=0;
+                   const cad=document.getElementById('cadre'); if(cad) cad.style.opacity=0; }, 2150);
+  setTimeout(()=>{ win.classList.add('plain'); nav.classList.add('on'); }, 2550);
+  setTimeout(()=>{ document.body.classList.add('done'); }, 2600);
+  setTimeout(()=>{ scene.remove(); finalMark.remove(); }, 3000);
+}
+
+function finir(){
+  if(scene) scene.remove(); if(skip) skip.remove();
+  nav.classList.add('on'); document.body.classList.add('done');
+  win.classList.add('plain'); win.style.opacity=1;
+  const c=document.getElementById('cadre'); if(c) c.remove();
+}
+
+if(skip) skip.addEventListener('click', finir);
+
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) finir();
+else if (document.readyState==='complete') demarrer();
+else addEventListener('load', demarrer, {once:true});
+</script>
+</body>
+</html>
